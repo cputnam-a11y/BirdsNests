@@ -5,7 +5,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootTable;
-import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.registry.RegistryKey;
@@ -61,8 +60,6 @@ public class NestItem extends Item {
         final Random random = player.getRandom();
         table.generateLoot(
                 new LootWorldContext.Builder(world)
-                        .add(LootContextParameters.THIS_ENTITY, player)
-                        .add(LootContextParameters.ORIGIN, player.getPos())
                         .build(LootContextTypes.EMPTY),
                 stack -> world.spawnEntity(make(
                         new ItemEntity(
