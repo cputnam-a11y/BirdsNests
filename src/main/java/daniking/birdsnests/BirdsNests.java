@@ -5,20 +5,22 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.item.Item;
-import net.minecraft.loot.LootPool;
-import net.minecraft.loot.LootTable;
-import net.minecraft.loot.condition.RandomChanceLootCondition;
-import net.minecraft.loot.entry.ItemEntry;
-import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Util;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.storage.loot.LootPool;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.entries.LootItem;
+import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
+import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,12 +28,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+@NullMarked
 public class BirdsNests implements ModInitializer {
-    private static final Supplier<Map<RegistryKey<LootTable>, Block>> LOOT_TABLE_LOOKUP = Suppliers.memoize(
+    private static final Supplier<Map<ResourceKey<LootTable>, Block>> LOOT_TABLE_LOOKUP = Suppliers.memoize(
             () -> Util.make(
                     new HashMap<>(),
-                    map -> Registries.BLOCK.forEach(
-                            block -> block.getLootTableKey().ifPresent(
+                    map -> BuiltInRegistries.BLOCK.forEach(
+                            block -> block.getLootTable().ifPresent(
                                     key -> map.put(key, block)
                             )
                     )
@@ -40,9 +43,9 @@ public class BirdsNests implements ModInitializer {
     public static final String MODID = "birdsnests";
     public static final Logger LOGGER = LoggerFactory.getLogger(BirdsNests.class);
     public static Config config;
-    public static final RegistryKey<Item> NEST_ITEM_KEY = RegistryKey.of(
-            RegistryKeys.ITEM,
-            Identifier.of(
+    public static final ResourceKey<Item> NEST_ITEM_KEY = ResourceKey.create(
+            Registries.ITEM,
+            Identifier.fromNamespaceAndPath(
                     MODID,
                     "nest"
             )
@@ -51,7 +54,7 @@ public class BirdsNests implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        Registry.register(Registries.ITEM, NEST_ITEM_KEY, NEST_ITEM);
+        Registry.register(BuiltInRegistries.ITEM, NEST_ITEM_KEY, NEST_ITEM);
         registerLootTables();
         LOGGER.info("BirdsNests Initialized");
     }
@@ -67,10 +70,10 @@ public class BirdsNests implements ModInitializer {
     }
 
     static LootPool buildLoot() {
-        return LootPool.builder()
-                .rolls(ConstantLootNumberProvider.create(1))
-                .conditionally(RandomChanceLootCondition.builder((float) config.nestDropChance).build())
-                .with(ItemEntry.builder(NEST_ITEM).build())
+        return LootPool.lootPool()
+                .setRolls(ConstantValue.exactly(1))
+                .conditionally(LootItemRandomChanceCondition.randomChance((float) config.nestDropChance).build())
+                .with(LootItem.lootTableItem(NEST_ITEM).build())
                 .build();
     }
 
@@ -78,13 +81,11 @@ public class BirdsNests implements ModInitializer {
         AutoConfig.register(Config.class, GsonConfigSerializer::new);
         config = AutoConfig.getConfigHolder(Config.class).getConfig();
         NEST_ITEM = new NestItem(
-                new Item.Settings()
-                        .maxCount(
-                                config != null
-                                ? config.maxCount
-                                : 64
+                new Item.Properties()
+                        .stacksTo(
+                                config.maxCount
                         )
-                        .registryKey(NEST_ITEM_KEY)
+                        .setId(NEST_ITEM_KEY)
         );
     }
 }

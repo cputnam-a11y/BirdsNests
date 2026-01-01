@@ -1,67 +1,69 @@
 package daniking.birdsnests;
 
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootTable;
-import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.loot.context.LootWorldContext;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import org.jspecify.annotations.NullMarked;
 
 import static net.minecraft.util.Util.make;
 
+@NullMarked
 public class NestItem extends Item {
-    public static final RegistryKey<LootTable> NEST_LOOT_TABLE_KEY = RegistryKey.of(
-            RegistryKeys.LOOT_TABLE,
-            Identifier.of(
+    public static final ResourceKey<LootTable> NEST_LOOT_TABLE_KEY = ResourceKey.create(
+            Registries.LOOT_TABLE,
+            Identifier.fromNamespaceAndPath(
                     BirdsNests.MODID,
                     "nest/nest_loot"
             )
     );
 
-    public NestItem(Settings settings) {
-        super(settings);
+    public NestItem(Properties properties) {
+        super(properties);
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        final ItemStack stack = user.getStackInHand(hand);
-        stack.decrementUnlessCreative(1, user);
+    public InteractionResult use(Level world, Player user, InteractionHand hand) {
+        final ItemStack stack = user.getItemInHand(hand);
+        stack.consume(1, user);
         world.playSound(
                 user,
-                user.getBlockPos(),
-                SoundEvents.BLOCK_GRASS_BREAK,
-                SoundCategory.NEUTRAL,
+                user.blockPosition(),
+                SoundEvents.GRASS_BREAK,
+                SoundSource.NEUTRAL,
                 1.0F,
                 1.0F
         );
-        if (world instanceof ServerWorld serverWorld) {
+        if (world instanceof ServerLevel serverWorld) {
             spawnLoot(serverWorld, user);
-            return ActionResult.SUCCESS.withNewHandStack(stack);
+            return InteractionResult.SUCCESS;
         } else {
             return super.use(world, user, hand);
         }
     }
 
-    private static void spawnLoot(ServerWorld world, PlayerEntity player) {
+    private static void spawnLoot(ServerLevel world, Player player) {
         final LootTable table = world.getServer()
-                .getReloadableRegistries()
+                .reloadableRegistries()
                 .getLootTable(NEST_LOOT_TABLE_KEY);
-        final Random random = player.getRandom();
-        table.generateLoot(
-                new LootWorldContext.Builder(world)
-                        .build(LootContextTypes.EMPTY),
-                stack -> world.spawnEntity(make(
+        final RandomSource random = player.getRandom();
+        table.getRandomItems(
+                new LootParams.Builder(world)
+                        .create(LootContextParamSets.EMPTY),
+                stack -> world.addFreshEntity(make(
                         new ItemEntity(
                                 world,
                                 player.getX(),
@@ -69,7 +71,7 @@ public class NestItem extends Item {
                                 player.getZ(),
                                 stack
                         ),
-                        entity -> entity.setVelocity(
+                        entity -> entity.setDeltaMovement(
                                 random.nextGaussian() * 0.05F,
                                 0.2D,
                                 random.nextGaussian() * 0.05F
