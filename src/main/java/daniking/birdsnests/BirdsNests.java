@@ -20,7 +20,6 @@ import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,8 +71,8 @@ public class BirdsNests implements ModInitializer {
     static LootPool buildLoot() {
         return LootPool.lootPool()
                 .setRolls(ConstantValue.exactly(1))
-                .conditionally(LootItemRandomChanceCondition.randomChance((float) config.nestDropChance).build())
-                .with(LootItem.lootTableItem(NEST_ITEM).build())
+                .when(LootItemRandomChanceCondition.randomChance((float) config.nestDropChance).build())
+                .add(LootItem.lootTableItem(NEST_ITEM).build())
                 .build();
     }
 

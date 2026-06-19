@@ -3,8 +3,8 @@ package daniking.birdsnests;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
-import net.fabricmc.fabric.api.datagen.v1.provider.SimpleFabricLootTableProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.SimpleFabricLootTableSubProvider;
 import net.minecraft.client.data.models.BlockModelGenerators;
 import net.minecraft.client.data.models.ItemModelGenerators;
 import net.minecraft.client.data.models.model.ModelTemplates;
@@ -34,7 +34,8 @@ public class BirdsNestsDatagen implements DataGeneratorEntrypoint {
     }
 
     static class ModelProvider extends FabricModelProvider {
-        public ModelProvider(FabricDataOutput output) {
+
+        public ModelProvider(FabricPackOutput output) {
             super(output);
         }
 
@@ -49,16 +50,16 @@ public class BirdsNestsDatagen implements DataGeneratorEntrypoint {
         }
     }
 
-    static class LootTableProvider extends SimpleFabricLootTableProvider {
+    static class LootTableProvider extends SimpleFabricLootTableSubProvider {
         public LootTableProvider(
-                FabricDataOutput output,
+                FabricPackOutput output,
                 CompletableFuture<HolderLookup.Provider> registryLookup
         ) {
             super(output, registryLookup, LootContextParamSets.EMPTY);
         }
 
         @Override
-        public void generate(BiConsumer<ResourceKey<net.minecraft.world.level.storage.loot.LootTable>, net.minecraft.world.level.storage.loot.LootTable.Builder> registrar) {
+        public void generate(BiConsumer<ResourceKey<LootTable>, LootTable.Builder> registrar) {
             registrar.accept(
                     NestItem.NEST_LOOT_TABLE_KEY,
                     LootTable.lootTable().pool(
